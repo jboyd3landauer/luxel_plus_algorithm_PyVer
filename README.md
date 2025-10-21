@@ -19,16 +19,16 @@ sample_id source energy source_type sde dde ow pl al cu
 
 i.e.,
 
-sample_id  = data[:, 0]
-source = data[:, 1]
-energy = data[:, 2]
-source_type = data[:, 3]
-sde = data[:, 4]
-dde = data[:, 5]
-ow = data[:, 6]
-pl = data[:, 7]
-al = data[:, 8]
-cu = data[:, 9]
+	sample_id  = data[:, 0]
+	source = data[:, 1]
+	energy = data[:, 2]
+	source_type = data[:, 3]
+	sde = data[:, 4]
+	dde = data[:, 5]
+	ow = data[:, 6]
+	pl = data[:, 7]
+	al = data[:, 8]
+	cu = data[:, 9]
 
 where "data" is the values read in from the datafile. 
 
