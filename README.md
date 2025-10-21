@@ -15,7 +15,7 @@ You will need to modify the load_data function such that the data file you read 
 
 For instance, in its current form, the load_data function reads in data with the following column structure:
 
-sample_id source energy source_type sde dde ow pl al cu
+	sample_id source energy source_type sde dde ow pl al cu
 
 i.e.,
 
