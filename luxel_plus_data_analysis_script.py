@@ -75,20 +75,18 @@ def load_data( filename, outfile, excel_outfile):
 	return dose_calcs	
 
 def main():
-	# input_filename = "C:\\Users\\jboyd\\Downloads\\MSalasky_MixedBH_problem_dataset_test_14Oct2025.csv"
-	# input_filename = "C:\\Users\\jboyd\\Downloads\\Test1_SimTestConVertVal_WB_SR90.csv"
-	# input_filename = "C:\\Users\\jboyd\\Downloads\\Test2_SimTestConVertVal_WB_UBETA.csv"
-	input_filename = "C:\\Users\\jboyd\\Downloads\\Test3_PhotonOnlyConVertVal_WB_Photon_Only.csv"
+	# input_filename = ".\\test_input_data\\Test1_SimTestConVertVal_WB_SR90.csv"
+	# input_filename = ".\\test_input_data\\Test2_SimTestConVertVal_WB_UBETA.csv"
+	input_filename = ".\\test_input_data\\Test3_PhotonOnlyConVertVal_WB_Photon_Only.csv"
 
 	print(f"Input filename: {input_filename}")
 
 	# output_cpp_filename = "./cpp_NS20_M30_luxel_plus_data_analysis_14Oct20255_pyVer.csv"
 	output_cpp_filename = "./cpp_Test1_SimTestConVertVal_WB_SR90_pyVer.csv"
 
-	# output_excel_filename = "./excel_NS20_M30_luxel_plus_data_analysis_14Oct2025_pyVer.csv"
-	# output_excel_filename = "./excel_Test1_SimTestConVertVal_WB_SR90_pyVer.csv"
-	# output_excel_filename = "./excel_Test2_SimTestConVertVal_WB_UBETA.csv"
-	output_excel_filename = "./excel_Test3_PhotonOnlyConVertVal_WB_Photon_Only.csv"
+	# output_excel_filename = ".\\output_data\\excel_Test1_SimTestConVertVal_WB_SR90_pyVer_PyVer.csv"
+	# output_excel_filename = ".\\output_data\\excel_Test2_SimTestConVertVal_WB_UBETA_PyVer.csv"
+	output_excel_filename = ".\\output_data\\excel_Test3_PhotonOnlyConVertVal_WB_Photon_Only_PyVer.csv"
 
 	dose_calcs = load_data(input_filename, output_cpp_filename, output_excel_filename)
 
