@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+import math
 
 @dataclass
 class return_CVs_with_errFlag:
@@ -269,29 +270,236 @@ def check_error_type4(OW, PL, Al, Cu, RadQual, print_detailed_err = False):
 # 		This algorithm doesn't calculate Photon-Average-SDe or Photon-Average-DDE
 # 		Therefore, we will report the SDE and DDE per the usual algorithm determination.
 
-	lower_limit = 10
-	upper_limit = 20 
+	lower_limit = 1
+	upper_limit = 20
 
-	errFlag = False
-	inRangeOW = False
-	inRangePL = False
-	inRangeAl = False
-	inRangeCu = False 
+	RQ_changed = False
+	orig_RQ = RadQual
 
-	inRangeOW = (lower_limit < OW) and (OW <= upper_limit)
-	inRangePL = (lower_limit < PL) and (PL <= upper_limit)
-	inRangeAl = (lower_limit < Al) and (Al <= upper_limit)
-	inRangeCu = (lower_limit < Cu) and (Cu <= upper_limit)
+	in_range = all(lower_limit < x <= upper_limit for x in [OW, PL, Al, Cu])
 
-	if inRangeOW and inRangePL and inRangeAl and inRangeCu:
+	if in_range:
 		RadQual = "P"
-
 		if print_detailed_err:
 			print("Error Condition 4.")
+		return True, RadQual
 
-		errFlag = True
+	if orig_RQ != RadQual:
+	    RQ_changed = True
 
-	return errFlag 
+	RQ_tracker = orig_RQ + RadQual
+
+	return (RQ_changed, RadQual, RQ_tracker)
+
+def check_rad_env_class_PO_error(OW, PL, Al, Cu, RadQual, effective_energy):
+	lower_limit = 2
+	upper_limit = 20
+
+	RQ_changed = False
+	orig_RQ = RadQual
+
+	if RadQual.startswith("P"):
+
+		in_range = all(lower_limit < x <= upper_limit for x in [OW, PL, Al, Cu])
+
+		if in_range:
+
+			if effective_energy <= 40:
+				RadQual = "PL"
+			elif (effective_energy > 40) and (effective_energy <= 200):
+				RadQual = "PM"
+			else:
+				RadQual = "PH"
+
+			if orig_RQ != RadQual:
+				RQ_changed = True
+
+	RQ_tracker = orig_RQ + RadQual
+
+	return (RQ_changed, RadQual, RQ_tracker)
+
+def check_high_low_beta_dose(RadQual, dose):
+	low_beta_dose_limit = 20
+	high_beta_dose_limit = 10
+
+	beta_dose_error = False
+
+	orig_RQ = RadQual
+
+	# High energy beta dose check
+	if (RadQual == "BH") and (dose > high_beta_dose_limit):
+		beta_dose_error = True  
+		RadQual = "P"
+
+	if (RadQual == "BL") and (dose > low_beta_dose_limit):
+		beta_dose_error = True 
+		RadQual = "P"
+
+	RQ_tracker = orig_RQ + RadQual
+
+	return (beta_dose_error, RadQual, RQ_tracker)
+
+def calc_final_error_LDE(DDE, SDE):
+	LDE_calc = 0.0
+
+	if SDE < 1.0:
+		LDE_calc = SDE
+	else:
+		LDE_SdeDde_limit = SDE*(1.4-(1.04*math.exp(-DDE/SDE)))
+
+		if LDE_SdeDde_limit > SDE:
+			LDE_calc = SDE 
+		else: 
+			LDE_calc = SDE*(1.4-(1.04*math.exp(-DDE/SDE)))
+
+	return LDE_calc
+
+def check_final_DDE_SDE_LDE(DDE, SDE, LDE, Cu):
+	final_DDE_SDE_LDE_error = False 
+	final_DDE_Cu_error = False 
+	final_SDE_DDE_error = False
+	final_LDE_error = False
+
+	reported_DDE = DDE 
+	reported_SDE = SDE 
+	reported_LDE = LDE 
+
+	if reported_DDE < Cu:
+		reported_DDE = Cu 
+		final_DDE_Cu_error = True 
+
+	if reported_SDE < 0.95*reported_DDE:
+		reported_SDE = 0.95*reported_DDE 
+		final_SDE_DDE_error = True 
+
+	if final_DDE_Cu_error or final_SDE_DDE_error:
+		reported_LDE = calc_final_error_LDE(reported_DDE, reported_SDE)
+
+	if reported_LDE < reported_DDE:
+		reported_LDE = reported_DDE
+		final_LDE_error = True 
+
+	if final_DDE_Cu_error or final_SDE_DDE_error or final_LDE_error:
+		final_DDE_SDE_LDE_error = True 
+
+	new_reported_doses_list = (reported_DDE, reported_SDE, reported_LDE)
+
+	errConditions = (final_DDE_SDE_LDE_error, new_reported_doses_list)
+
+	return errConditions
+
+def check_RQ_and_SDE(RadQual, SDE):
+	RQ_and_SDE_error = False
+
+	orig_RQ = RadQual
+
+	if (RadQual=="PL" or RadQual=="PM" or RadQual=="PH") and (SDE < 50):
+		RQ_and_SDE_error = True 
+		RadQual = "P" 
+
+	RQ_tracker = orig_RQ + RadQual 
+
+	errConditions = (RQ_and_SDE_error, RadQual, RQ_tracker)
+
+def final_error_check(OW, PL, Al, Cu, RadQual, b_rad_env_class_PO):
+	if b_rad_env_class_PO:
+		errConditions = check_rad_env_class_PO_error(OW, PL, Al, Cu, RadQual)
+	else:
+		errConditions = check_error_type4(OW, PL, Al, Cu, RadQual)
+
+	return errConditions
+
+def final_error_checks(OW, PL, Al, Cu, RadQual, b_rad_env_class_PO, effective_energy, calculation_results):
+
+	rad_env_class_PO_errors = (False, (RadQual, RadQual))
+	type4_errors = (False, (RadQual, RadQual))
+	final_DDE_SDE_LDE_errors = (False, (-1, -1, -1))
+
+	DDE = calculation_results.DDE.value 
+
+	# NOTE: return_vector[9] == "SDE_preadjusted"
+	SDE = calculation_results.SDE_preadjusted.value 
+	LDE = calculation_results.LDE.value
+
+	if b_rad_env_class_PO and effective_energy>0:
+		rad_env_class_PO_errors = check_rad_env_class_PO_error(OW, PL, Al, Cu, RadQual, effective_energy)
+
+		if rad_env_class_PO_errors[0]:
+			new_Reported_RQ = rad_env_class_PO_errors[1][0]
+
+			Reported_RQ_int = 8
+
+			if new_Reported_RQ == "PL":
+				Reported_RQ_int = 3
+			if new_Reported_RQ == "PM":
+				Reported_RQ_int = 4
+			if new_Reported_RQ == "PH":
+				Reported_RQ_int = 5
+
+			calculation_results.Reported_RQ.value = new_Reported_RQ
+			calculation_results.Reported_RQ.descr = Reported_RQ_int
+
+	type4_lower_limit = 2
+	type4_upper_limit = 20
+
+	in_range = all(type4_lower_limit < x <= type4_upper_limit for x in [OW, PL, Al, Cu])
+
+	if in_range:
+		type4_errors = check_error_type4(OW, PL, Al, Cu, RadQual)
+
+	reported_DDE = DDE; reported_SDE = SDE; reported_LDE = LDE
+
+	final_DDE_SDE_LDE_errors = check_final_DDE_SDE_LDE(DDE, SDE, LDE, Cu)
+
+	if final_DDE_SDE_LDE_errors[0]:
+		new_reported_DDE = final_DDE_SDE_LDE_errors[1][0]
+		new_reported_SDE = final_DDE_SDE_LDE_errors[1][1]
+		new_reported_LDE = final_DDE_SDE_LDE_errors[1][2]
+
+		calculation_results.Reported_DDE.value = new_reported_DDE
+		calculation_results.Reported_SDE.value = new_reported_SDE
+		calculation_results.Reported_LDE.value = new_reported_LDE
+
+		calculation_results.Reported_DDE.descr = str(new_reported_DDE)
+		calculation_results.Reported_SDE.descr = str(new_reported_SDE)
+		calculation_results.Reported_LDE.descr = str(new_reported_LDE)
+	else:
+		calculation_results.Reported_DDE.value = DDE
+		calculation_results.Reported_SDE.value = SDE
+		calculation_results.Reported_LDE.value = LDE
+
+		calculation_results.Reported_DDE.descr = str(DDE)
+		calculation_results.Reported_SDE.descr = str(SDE)
+		calculation_results.Reported_LDE.descr = str(LDE)
+
+    # Re-assign Reported RQ in case RadQual was changed to "P"
+	if RadQual == "P":
+		new_Reported_RQ = "P"
+		Reported_RQ_int = 8
+
+		calculation_results.Reported_RQ.descr = Reported_RQ_int
+		calculation_results.Reported_RQ.value = new_Reported_RQ
+
+    # FOR REFERENCE
+    # return_vector = [
+    #     ("Error", (0.0, "")),
+    #     ("DDE", (0.0, "")),
+    #     ("SDE", (0.0, "")),
+    #     ("LDE", (0.0, "")),
+    #     ("Branch_RQ", (0.0, "")),
+    #     ("Reported_RQ", (0.0, "")),
+    #     ("Beta_Indicator", (0.0, "")),
+    #     ("Beta_Dose", (0.0, "")),
+    #     ("Energy", (0.0, "")),
+    #     ("SDE_preadjusted", (0.0, "")),
+    #     ("Reported_DDE", (0.0, "")),
+    #     ("Reported_SDE", (0.0, "")),
+    #     ("Reported_LDE", (0.0, ""))
+    # ]    
+
+	final_errConditions = (rad_env_class_PO_errors, type4_errors, final_DDE_SDE_LDE_errors)
+
+	return final_errConditions
 
 def check_error_conditions(OW, PL, Al, Cu, RadQual, controlValues = [-1, -1, -1, -1], print_detailed_err = False):
 	isErr = False

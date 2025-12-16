@@ -312,6 +312,7 @@ def convert_RQ_string_to_int(RQ_string):
 	if RQ_string == "PH": RQ_num = 5
 	if RQ_string == "Mixed_BH": RQ_num = 6
 	if RQ_string == "Mixed_BL": RQ_num = 7
+	if RQ_string == "P": RQ_num = 8
 
 	return RQ_num 
 
@@ -337,5 +338,6 @@ def convert_RQ_int_to_string(RQ_int):
 	if RQ_int == 5: RQ_string = "PH"
 	if RQ_int == 6: RQ_string = "Mixed_BH"
 	if RQ_int == 7: RQ_string = "Mixed_BL"	
+	if RQ_int == 8: RQ_string = "P"
 
 	return RQ_string
