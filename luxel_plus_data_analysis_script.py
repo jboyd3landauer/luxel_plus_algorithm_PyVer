@@ -30,6 +30,7 @@ def fr_number(x):
 def load_data( filename, outfile, excel_outfile):
 
 	# read the specified file:
+	# data_file = pd.read_csv(filename, sep=',')
 	data_file = pd.read_csv(filename, sep='\s+')
 	data = data_file.to_numpy()
 
@@ -58,7 +59,6 @@ def load_data( filename, outfile, excel_outfile):
 	al = data[:, 8]
 	cu = data[:, 9]
 
-
 	# CVs = np.array([reassign_negative_and_zerovalued_element_values(o, p, a, c) for o, p, a, c in zip(ow, pl, al, cu)])
 
 	dose_calcs = np.array([luxel_plus_algorithm(o, p, a, c) for o, p, a, c in zip(ow, pl, al, cu)])
@@ -72,7 +72,7 @@ def load_data( filename, outfile, excel_outfile):
 		DoseCalc.Known_DDE = deep
 		DoseCalc.Known_SDE = shallow
 
-	return dose_calcs	
+	return dose_calcs
 
 def main():
 	# input_filename = ".\\test_input_data\\Test1_SimTestConVertVal_WB_SR90.csv"
@@ -90,14 +90,15 @@ def main():
 
 	dose_calcs = load_data(input_filename, output_cpp_filename, output_excel_filename)
 
-	headers = ["Sample_ID", "Source_Type", "Source", "Ratio", "OW","PL","Al","Cu","Known_DDE","DDE_calc","Known_SDE","SDE_calc","Branch_RQ","Reported_RQ"]
+	headers = ["Sample_ID", "Source_Type", "Source", "OW","PL","Al","Cu","Known_DDE","DDE_calc","Reported_DDE","Known_SDE","SDE_calc","Reported_SDE","LDE_calc","Reported_LDE","Branch_RQ","Reported_RQ"]
 
 	with open(output_excel_filename, "w", newline='') as f:
-		writer = csv.writer(f, delimiter=';')
+		writer = csv.writer(f, delimiter=',')
 		writer.writerow(headers)
 
 		for dc in dose_calcs:
-			writer.writerow([dc.Sample_ID, dc.Source_Type, dc.Source, dc.Ratio, fr_number(dc.Known_OW), fr_number(dc.Known_PL), fr_number(dc.Known_Al), fr_number(dc.Known_Cu), fr_number(dc.Known_DDE), fr_number(dc.DDE.value), fr_number(dc.Known_SDE), fr_number(dc.SDE_preadjusted.value), dc.Branch_RQ.descr, dc.Reported_RQ.descr])
+			# writer.writerow([dc.Sample_ID, dc.Source_Type, dc.Source, dc.Ratio, fr_number(dc.Known_OW), fr_number(dc.Known_PL), fr_number(dc.Known_Al), fr_number(dc.Known_Cu), fr_number(dc.Known_DDE), fr_number(dc.DDE.value), fr_number(dc.Known_SDE), fr_number(dc.SDE_preadjusted.value), dc.Branch_RQ.descr, dc.Reported_RQ.descr])
+			writer.writerow([dc.Sample_ID, dc.Source_Type, dc.Source, dc.Known_OW, dc.Known_PL, dc.Known_Al, dc.Known_Cu, dc.Known_DDE, dc.DDE.value, dc.Reported_DDE.value, dc.Known_SDE, dc.SDE_preadjusted.value, dc.Reported_SDE.value, dc.LDE.value, dc.Reported_LDE.value, dc.Branch_RQ.descr, dc.Reported_RQ.descr])
 	
 	print(f"Known_DDE = {dose_calcs[0].Known_DDE}")
 	print(f"DDE = {dose_calcs[0].DDE.value}")
@@ -108,6 +109,9 @@ def main():
 	print(f"Branch_RQ = {dose_calcs[0].Branch_RQ.descr}")
 	print(f"Reported_RQ = {dose_calcs[0].Reported_RQ.descr}")
 
+	print(f"----------------")
+	print(f"Excel output filename: {output_excel_filename}")
+	print(f"----------------")
 
 if __name__ == "__main__":
     main()

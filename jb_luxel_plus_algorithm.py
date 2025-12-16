@@ -32,6 +32,7 @@ from jb_luxel_calc import assign_beta_indicator
 from jb_luxel_calc import report_radiation_quality
 from jb_luxel_calc import calc_beta_dose_and_adjustedSDE
 from jb_luxel_calc import calc_continuous_energy
+from jb_luxel_calc import final_error_checks
 
 @dataclass
 class return_list_value_and_descr:
@@ -68,6 +69,9 @@ class luxel_plus_calculations:
 	Source: str
 	Source_Type: str
 	Ratio: None
+	Reported_DDE: return_list_value_and_descr
+	Reported_SDE: return_list_value_and_descr
+	Reported_LDE: return_list_value_and_descr
 
 def luxel_plus_algorithm(OW, PL, Al, Cu, PGC_RAD_ENV_Class = -99, PGC_ZONE = None, controlValues = [-1, -1, -1, -1], standardErrorConditions = True, print_detailed_err = False):
 	# First component of pair: Descriptor string of the variable, i.e., "SDE", "DDE", "RQ", etc.
@@ -104,6 +108,9 @@ def luxel_plus_algorithm(OW, PL, Al, Cu, PGC_RAD_ENV_Class = -99, PGC_ZONE = Non
 
 	# Returns a list of lists
 	num_return_values = 10
+
+	error_string = ""
+
 	def make_default_descr():
 		return return_list_value_and_descr(value=None, descr=None)
 		
@@ -128,6 +135,9 @@ def luxel_plus_algorithm(OW, PL, Al, Cu, PGC_RAD_ENV_Class = -99, PGC_ZONE = Non
 		Source = None,
 		Source_Type = None,
 		Ratio = None,
+		Reported_DDE=make_default_descr(),
+		Reported_SDE=make_default_descr(),
+		Reported_LDE=make_default_descr()
 	)
 
 	# 	We will process all possible variables/calculations and store them in the single vector.
@@ -163,6 +173,10 @@ def luxel_plus_algorithm(OW, PL, Al, Cu, PGC_RAD_ENV_Class = -99, PGC_ZONE = Non
 	b_PO_ENV_Class = False
 	b_UBeta_ENV_Class = False 
 	b_PO_Zone = False 
+
+	Reported_DDE = 0.0
+	Reported_SDE = 0.0
+	Reported_LDE = 0.0
 
 	# List to hold ENV Class and PGC Zone booleans:
 
@@ -274,7 +288,6 @@ def luxel_plus_algorithm(OW, PL, Al, Cu, PGC_RAD_ENV_Class = -99, PGC_ZONE = Non
 		err1 = errConditions.errors_list[0]
 		err2 = errConditions.errors_list[1]
 		err3 = errConditions.errors_list[2]
-		err4 = errConditions.errors_list[3]
 
 		if isErr:
 			# This means an error flag exists and so we should report their effect.
@@ -289,11 +302,13 @@ def luxel_plus_algorithm(OW, PL, Al, Cu, PGC_RAD_ENV_Class = -99, PGC_ZONE = Non
 				# This conditional should reflect that we have either Error Type 2 or 4.
 				errEffectNumber = 1
 
-			# We can build the error flag string
-			if err1: errFlagString + "1"
-			if err2: errFlagString + "2"
-			if err3: errFlagString + "3"
-			if err4: errFlagString + "4"
+			for i in range(0, 3):
+				if errConditions.errors_list[i]:
+					error_string += "1"
+					errFlagString += "1"
+				else:
+					error_string += "0"
+					errFlagString += "0"      
 		else:
 			errEffectNumber = 0 
 
@@ -436,6 +451,18 @@ def luxel_plus_algorithm(OW, PL, Al, Cu, PGC_RAD_ENV_Class = -99, PGC_ZONE = Non
 
 # ***************************
 # ***************************
+
+	final_errors = final_error_checks(OW, PL, Al, Cu, Branch_RQ, b_rad_env_class_PO, Energy, calculation_results)
+
+	# Update Errors in return vector:
+
+	for i, err in enumerate(final_errors):
+		if final_errors[i][0]:
+			error_string += "1"
+		else:
+			error_string += "0"
+
+	calculation_results.Error.value = error_string	
 
 	return calculation_results
 
