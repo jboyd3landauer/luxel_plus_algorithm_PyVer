@@ -77,16 +77,18 @@ def load_data( filename, outfile, excel_outfile):
 def main():
 	# input_filename = ".\\test_input_data\\Test1_SimTestConVertVal_WB_SR90.csv"
 	# input_filename = ".\\test_input_data\\Test2_SimTestConVertVal_WB_UBETA.csv"
-	input_filename = ".\\test_input_data\\Test3_PhotonOnlyConVertVal_WB_Photon_Only.csv"
+	# input_filename = ".\\test_input_data\\Test3_PhotonOnlyConVertVal_WB_Photon_Only.csv"
+	input_filename = ".\\test_input_data\\MSalasky_low_dose_test_data.csv"
 
 	print(f"Input filename: {input_filename}")
 
 	# output_cpp_filename = "./cpp_NS20_M30_luxel_plus_data_analysis_14Oct20255_pyVer.csv"
-	output_cpp_filename = "./cpp_Test1_SimTestConVertVal_WB_SR90_pyVer.csv"
+	# output_cpp_filename = "./cpp_Test1_SimTestConVertVal_WB_SR90_pyVer.csv"
+	output_cpp_filename = "./cpp_MSalasky_low_dose_test_data_pyVer.csv"
 
 	# output_excel_filename = ".\\output_data\\excel_Test1_SimTestConVertVal_WB_SR90_pyVer_PyVer.csv"
 	# output_excel_filename = ".\\output_data\\excel_Test2_SimTestConVertVal_WB_UBETA_PyVer.csv"
-	output_excel_filename = ".\\output_data\\excel_Test3_PhotonOnlyConVertVal_WB_Photon_Only_PyVer.csv"
+	output_excel_filename = ".\\output_data\\excel_MSalasky_low_dose_test_data_PyVer.csv"
 
 	dose_calcs = load_data(input_filename, output_cpp_filename, output_excel_filename)
 
@@ -98,7 +100,7 @@ def main():
 
 		for dc in dose_calcs:
 			# writer.writerow([dc.Sample_ID, dc.Source_Type, dc.Source, dc.Ratio, fr_number(dc.Known_OW), fr_number(dc.Known_PL), fr_number(dc.Known_Al), fr_number(dc.Known_Cu), fr_number(dc.Known_DDE), fr_number(dc.DDE.value), fr_number(dc.Known_SDE), fr_number(dc.SDE_preadjusted.value), dc.Branch_RQ.descr, dc.Reported_RQ.descr])
-			writer.writerow([dc.Sample_ID, dc.Source_Type, dc.Source, dc.Known_OW, dc.Known_PL, dc.Known_Al, dc.Known_Cu, dc.Known_DDE, dc.DDE.value, dc.Reported_DDE.value, dc.Known_SDE, dc.SDE_preadjusted.value, dc.Reported_SDE.value, dc.LDE.value, dc.Reported_LDE.value, dc.Branch_RQ.descr, dc.Reported_RQ.descr])
+			writer.writerow([dc.Sample_ID, dc.Source_Type, dc.Source, dc.Known_OW, dc.Known_PL, dc.Known_Al, dc.Known_Cu, dc.Known_DDE, dc.DDE.value, dc.Reported_DDE.value, dc.Known_SDE, dc.SDE_preadjusted.value, dc.Reported_SDE.value, dc.LDE.value, dc.Reported_LDE.value, dc.Branch_RQ.descr, dc.Reported_RQ.value])
 	
 	print(f"Known_DDE = {dose_calcs[0].Known_DDE}")
 	print(f"DDE = {dose_calcs[0].DDE.value}")

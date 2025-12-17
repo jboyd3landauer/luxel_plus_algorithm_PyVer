@@ -1,6 +1,7 @@
 from dataclasses import dataclass
 import math
 
+
 @dataclass
 class return_CVs_with_errFlag:
 	CVs: float
@@ -275,21 +276,22 @@ def check_error_type4(OW, PL, Al, Cu, RadQual, print_detailed_err = False):
 
 	RQ_changed = False
 	orig_RQ = RadQual
+	new_RadQual = RadQual
 
 	in_range = all(lower_limit < x <= upper_limit for x in [OW, PL, Al, Cu])
 
 	if in_range:
-		RadQual = "P"
+		new_RadQual = "P"
 		if print_detailed_err:
 			print("Error Condition 4.")
-		return True, RadQual
+		return True, new_RadQual
 
-	if orig_RQ != RadQual:
+	if orig_RQ != new_RadQual:
 	    RQ_changed = True
 
-	RQ_tracker = orig_RQ + RadQual
+	RQ_tracker = orig_RQ + new_RadQual
 
-	return (RQ_changed, RadQual, RQ_tracker)
+	return (RQ_changed, new_RadQual, RQ_tracker)
 
 def check_rad_env_class_PO_error(OW, PL, Al, Cu, RadQual, effective_energy):
 	lower_limit = 2
@@ -297,6 +299,7 @@ def check_rad_env_class_PO_error(OW, PL, Al, Cu, RadQual, effective_energy):
 
 	RQ_changed = False
 	orig_RQ = RadQual
+	new_RadQual = RadQual
 
 	if RadQual.startswith("P"):
 
@@ -305,18 +308,18 @@ def check_rad_env_class_PO_error(OW, PL, Al, Cu, RadQual, effective_energy):
 		if in_range:
 
 			if effective_energy <= 40:
-				RadQual = "PL"
+				new_RadQual = "PL"
 			elif (effective_energy > 40) and (effective_energy <= 200):
-				RadQual = "PM"
+				new_RadQual = "PM"
 			else:
-				RadQual = "PH"
+				new_RadQual = "PH"
 
-			if orig_RQ != RadQual:
+			if orig_RQ != new_RadQual:
 				RQ_changed = True
 
-	RQ_tracker = orig_RQ + RadQual
+	RQ_tracker = orig_RQ + new_RadQual
 
-	return (RQ_changed, RadQual, RQ_tracker)
+	return (RQ_changed, new_RadQual, RQ_tracker)
 
 def check_high_low_beta_dose(RadQual, dose):
 	low_beta_dose_limit = 20
@@ -325,19 +328,20 @@ def check_high_low_beta_dose(RadQual, dose):
 	beta_dose_error = False
 
 	orig_RQ = RadQual
+	new_RadQual = RadQual
 
 	# High energy beta dose check
 	if (RadQual == "BH") and (dose > high_beta_dose_limit):
 		beta_dose_error = True  
-		RadQual = "P"
+		new_RadQual = "P"
 
 	if (RadQual == "BL") and (dose > low_beta_dose_limit):
 		beta_dose_error = True 
-		RadQual = "P"
+		new_RadQual = "P"
 
-	RQ_tracker = orig_RQ + RadQual
+	RQ_tracker = orig_RQ + new_RadQual
 
-	return (beta_dose_error, RadQual, RQ_tracker)
+	return (beta_dose_error, new_RadQual, RQ_tracker)
 
 def calc_final_error_LDE(DDE, SDE):
 	LDE_calc = 0.0
@@ -392,22 +396,16 @@ def check_RQ_and_SDE(RadQual, SDE):
 	RQ_and_SDE_error = False
 
 	orig_RQ = RadQual
+	new_RadQual = RadQual
 
 	if (RadQual=="PL" or RadQual=="PM" or RadQual=="PH") and (SDE < 50):
 		RQ_and_SDE_error = True 
-		RadQual = "P" 
+		new_RadQual = "P" 
 
-	RQ_tracker = orig_RQ + RadQual 
+	RQ_tracker = orig_RQ + new_RadQual 
 
-	errConditions = (RQ_and_SDE_error, RadQual, RQ_tracker)
+	errConditions = (RQ_and_SDE_error, new_RadQual, RQ_tracker)
 
-def final_error_check(OW, PL, Al, Cu, RadQual, b_rad_env_class_PO):
-	if b_rad_env_class_PO:
-		errConditions = check_rad_env_class_PO_error(OW, PL, Al, Cu, RadQual)
-	else:
-		errConditions = check_error_type4(OW, PL, Al, Cu, RadQual)
-
-	return errConditions
 
 def final_error_checks(OW, PL, Al, Cu, RadQual, b_rad_env_class_PO, effective_energy, calculation_results):
 
@@ -421,31 +419,25 @@ def final_error_checks(OW, PL, Al, Cu, RadQual, b_rad_env_class_PO, effective_en
 	SDE = calculation_results.SDE_preadjusted.value 
 	LDE = calculation_results.LDE.value
 
+	new_Reported_RQ = RadQual
+
 	if b_rad_env_class_PO and effective_energy>0:
 		rad_env_class_PO_errors = check_rad_env_class_PO_error(OW, PL, Al, Cu, RadQual, effective_energy)
 
 		if rad_env_class_PO_errors[0]:
 			new_Reported_RQ = rad_env_class_PO_errors[1][0]
 
-			Reported_RQ_int = 8
-
-			if new_Reported_RQ == "PL":
-				Reported_RQ_int = 3
-			if new_Reported_RQ == "PM":
-				Reported_RQ_int = 4
-			if new_Reported_RQ == "PH":
-				Reported_RQ_int = 5
-
-			calculation_results.Reported_RQ.value = new_Reported_RQ
-			calculation_results.Reported_RQ.descr = Reported_RQ_int
-
-	type4_lower_limit = 2
+	type4_lower_limit = 1
 	type4_upper_limit = 20
 
 	in_range = all(type4_lower_limit < x <= type4_upper_limit for x in [OW, PL, Al, Cu])
 
 	if in_range:
 		type4_errors = check_error_type4(OW, PL, Al, Cu, RadQual)
+
+		if type4_errors[0]:
+			new_Reported_RQ = type4_errors[1]
+
 
 	reported_DDE = DDE; reported_SDE = SDE; reported_LDE = LDE
 
@@ -473,12 +465,9 @@ def final_error_checks(OW, PL, Al, Cu, RadQual, b_rad_env_class_PO, effective_en
 		calculation_results.Reported_LDE.descr = str(LDE)
 
     # Re-assign Reported RQ in case RadQual was changed to "P"
-	if RadQual == "P":
-		new_Reported_RQ = "P"
-		Reported_RQ_int = 8
 
-		calculation_results.Reported_RQ.descr = Reported_RQ_int
-		calculation_results.Reported_RQ.value = new_Reported_RQ
+	calculation_results.Reported_RQ.descr = new_Reported_RQ
+	calculation_results.Reported_RQ.value = new_Reported_RQ
 
     # FOR REFERENCE
     # return_vector = [
