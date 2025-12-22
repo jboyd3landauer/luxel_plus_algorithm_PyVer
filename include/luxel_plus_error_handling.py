@@ -272,7 +272,7 @@ def check_error_type4(OW, PL, Al, Cu, RadQual, print_detailed_err = False):
 # 		Therefore, we will report the SDE and DDE per the usual algorithm determination.
 
 	lower_limit = 1
-	upper_limit = 20
+	upper_limit = 10 ## was 20
 
 	RQ_changed = False
 	orig_RQ = RadQual
